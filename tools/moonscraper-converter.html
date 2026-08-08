@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hi Clone — Moonscraper Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a13; --bg-raised:#12121f; --line:#23233a; --ink:#f2f1f6; --muted:#8a8aa3;
+  --lane1:#ff3e9a; --lane2:#35e8e0; --lane3:#ffc145; --lane4:#9b5de5;
+}
+*{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100vh; background:radial-gradient(ellipse at top,#14142a 0%,#0a0a13 60%);
+  color:var(--ink); font-family:'Manrope',system-ui,sans-serif; padding:32px 20px 80px;
+}
+h1,h2,.brand{ font-family:'Rajdhani',sans-serif; letter-spacing:.02em; }
+.wrap{ max-width:640px; margin:0 auto; }
+.brand{ font-size:1.3rem; font-weight:700; margin-bottom:4px; }
+.brand-hi{ color:var(--lane1); } .brand-clone{ color:var(--ink); margin-left:2px; }
+.subtitle{ color:var(--muted); font-size:.9rem; margin:0 0 28px; line-height:1.5; }
+code{ background:#1c1c2e; padding:2px 6px; border-radius:6px; font-size:.85em; color:var(--lane2); }
+
+.dropzone{
+  border:2px dashed var(--line); border-radius:16px; padding:36px 20px; text-align:center;
+  cursor:pointer; transition:border-color .15s, background .15s; background:var(--bg-raised);
+}
+.dropzone.drag{ border-color:var(--lane2); background:#16233a; }
+.dropzone .big{ font-weight:700; font-size:1.05rem; margin-bottom:6px; }
+.dropzone .small{ color:var(--muted); font-size:.85rem; }
+input[type=file]{ display:none; }
+
+.panel{
+  margin-top:22px; background:var(--bg-raised); border:1px solid var(--line);
+  border-radius:16px; padding:20px; display:none;
+}
+.panel.show{ display:block; }
+.field{ margin-bottom:16px; }
+.field label{ display:block; font-weight:700; font-size:.88rem; margin-bottom:6px; }
+select, input[type=text]{
+  width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
+  background:#0e0e1a; color:var(--ink); font-size:.92rem; font-family:inherit;
+}
+.row{ display:flex; gap:12px; }
+.row .field{ flex:1; }
+
+button.primary{
+  width:100%; padding:14px; border:none; border-radius:12px; background:var(--lane1);
+  color:#fff; font-weight:700; font-size:.98rem; cursor:pointer; margin-top:4px;
+}
+button.primary:disabled{ background:#34344a; color:var(--muted); cursor:default; }
+button.ghost{
+  padding:12px; border:1px solid var(--line); border-radius:12px; background:transparent;
+  color:var(--ink); font-weight:600; cursor:pointer; width:100%; margin-top:8px; font-size:.9rem;
+}
+
+.result{ margin-top:20px; display:none; }
+.result.show{ display:block; }
+.stat-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.stat{
+  flex:1; min-width:80px; background:#0e0e1a; border:1px solid var(--line); border-radius:10px;
+  padding:10px 12px; text-align:center;
+}
+.stat b{ display:block; font-size:1.3rem; font-family:'Rajdhani',sans-serif; }
+.stat.tap b{ color:var(--lane2); } .stat.hold b{ color:var(--lane4); } .stat.swipe b{ color:var(--lane3); }
+.warnings{
+  background:#241a10; border:1px solid #4a3418; border-radius:10px; padding:12px 14px;
+  font-size:.8rem; color:#ffcf8a; max-height:160px; overflow-y:auto; margin-bottom:14px;
+}
+.warnings div{ margin-bottom:4px; }
+.downloads{ display:flex; gap:10px; }
+.downloads a{
+  flex:1; text-align:center; padding:12px; border-radius:10px; text-decoration:none;
+  background:var(--lane2); color:#0a0a13; font-weight:700; font-size:.88rem;
+}
+.error{
+  margin-top:18px; background:#2a1218; border:1px solid #5c1f2b; color:#ff9aa8;
+  border-radius:10px; padding:12px 14px; font-size:.85rem; display:none;
+}
+.error.show{ display:block; }
+.filename{ color:var(--lane2); font-weight:700; word-break:break-all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="brand-hi">HI</span><span class="brand-clone">CLONE</span></div>
+  <p class="subtitle">Moonscraper <code>.chart</code> → Hi Clone converter, runs entirely in your browser — nothing to install. Drop a file in, pick the output difficulty, download <code>chart.chart</code> + <code>info.json</code>.</p>
+
+  <div class="dropzone" id="dropzone">
+    <div class="big" id="dz-label">Drop a .chart file here, or tap to choose one</div>
+    <div class="small" id="dz-sub">Reads note sections, swipe/noodle events, and tempo changes directly from the file</div>
+    <input type="file" id="file-input" accept=".chart">
+  </div>
+
+  <div class="panel" id="options-panel">
+    <div class="field">
+      <label for="section-select">Note section</label>
+      <select id="section-select"></select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="diff-select">Hi Clone difficulty</label>
+        <select id="diff-select">
+          <option value="Standard">Standard (_ST)</option>
+          <option value="Gold">Gold (_GOLD)</option>
+          <option value="Diamond" selected>Diamond (_DIAMOND)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="slug-input">Folder name</label>
+        <input type="text" id="slug-input">
+      </div>
+    </div>
+    <button class="primary" id="convert-btn">Convert</button>
+  </div>
+
+  <div class="error" id="error-box"></div>
+
+  <div class="result" id="result-panel">
+    <div class="stat-row">
+      <div class="stat tap"><b id="stat-tap">0</b>taps</div>
+      <div class="stat hold"><b id="stat-hold">0</b>hold segs</div>
+      <div class="stat swipe"><b id="stat-swipe">0</b>swipes</div>
+    </div>
+    <div class="warnings" id="warnings-box" style="display:none;"></div>
+    <div class="downloads">
+      <a id="dl-chart" download="chart.chart">Download chart.chart</a>
+      <a id="dl-info" download="info.json">Download info.json</a>
+    </div>
+    <button class="ghost" id="reset-btn">Convert another file</button>
+    <p class="small" style="color:var(--muted); margin-top:14px; line-height:1.5;">
+      Put both files in <span class="filename" id="folder-hint"></span> inside your
+      <code>Hi Beatz</code> folder, add <code>audio.mp3</code> + <code>artwork.jpg</code>,
+      then add the folder name to <code>Hi Beatz/songs.json</code>.
+    </p>
+  </div>
+</div>
+
+<script>
+// ---- Direct port of tools/moonscraper_to_hiclone.py — keep in sync with it ----
+
+const FRET_TO_LANE = {0:1, 1:2, 2:3, 3:4};
+const DROPPED_FRETS = new Set([4, 7]);
+const IGNORED_MODIFIER_FRETS = new Set([5, 6]);
+const SWIPE_CODE_RE = /^([lr])([1-4])$/;
+const HOLD_EVENT_RE = /^h(\d)>(\d)$/;
+const DEFAULT_NOODLE_DUR = 0.5;
+const LINE_RE = /^\s*(\d+)\s*=\s*(.+?)\s*$/;
+const SECTION_RE = /^\[(.+?)\]\s*$/;
+
+function parseChartSections(text) {
+  const sections = {};
+  let current = null;
+  for (let raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line === '{' || line === '}') continue;
+    const m = SECTION_RE.exec(line);
+    if (m) { current = m[1]; sections[current] = []; continue; }
+    if (current !== null) sections[current].push(line);
+  }
+  return sections;
+}
+
+function parseSongMeta(lines) {
+  const meta = { Resolution: 192, Offset: 0.0, Name: null, Artist: null };
+  for (const line of lines) {
+    const idx = line.indexOf('=');
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim();
+    let val = line.slice(idx + 1).trim();
+    val = val.replace(/^"|"$/g, '');
+    if (key === 'Resolution') meta.Resolution = parseInt(val, 10);
+    else if (key === 'Offset') meta.Offset = parseFloat(val);
+    else if (key === 'Name') meta.Name = val;
+    else if (key === 'Artist') meta.Artist = val;
+  }
+  return meta;
+}
+
+function parseSyncTrack(lines) {
+  const tempos = [];
+  for (const line of lines) {
+    const m = LINE_RE.exec(line);
+    if (!m) continue;
+    const tick = parseInt(m[1], 10);
+    const rest = m[2].split(/\s+/);
+    if (rest[0] === 'B' && rest.length >= 2) {
+      tempos.push([tick, parseInt(rest[1], 10) / 1000.0]);
+    }
+  }
+  tempos.sort((a, b) => a[0] - b[0]);
+  if (!tempos.length || tempos[0][0] !== 0) tempos.unshift([0, 120.0]);
+  return tempos;
+}
+
+function buildTickToSeconds(tempos, resolution) {
+  const cum = [];
+  let acc = 0.0;
+  for (let i = 0; i < tempos.length; i++) {
+    const [tick, bpm] = tempos[i];
+    cum.push([tick, acc, bpm]);
+    if (i + 1 < tempos.length) {
+      const nextTick = tempos[i + 1][0];
+      const spt = 60.0 / (bpm * resolution);
+      acc += (nextTick - tick) * spt;
+    }
+  }
+  return function tickToSeconds(tick) {
+    let seg = cum[0];
+    for (const entry of cum) {
+      if (entry[0] <= tick) seg = entry; else break;
+    }
+    const [segTick, segSeconds, bpm] = seg;
+    const spt = 60.0 / (bpm * resolution);
+    return segSeconds + (tick - segTick) * spt;
+  };
+}
+
+function parseEvents(lines) {
+  const events = {};
+  for (const line of lines) {
+    const m = LINE_RE.exec(line);
+    if (!m) continue;
+    const tick = parseInt(m[1], 10);
+    const rest = m[2].trim();
+    if (!rest.startsWith('E')) continue;
+    let text = rest.slice(1).trim().replace(/^"|"$/g, '').trim();
+    if (!text) continue;
+    (events[tick] = events[tick] || []).push(text);
+  }
+  return events;
+}
+
+function r4(x) { return Math.round(x * 10000) / 10000; }
+
+function parseNotes(lines, eventsByTick, tickToSeconds, offsetSeconds) {
+  const rawNotes = [];
+  const warnings = [];
+
+  for (const line of lines) {
+    const m = LINE_RE.exec(line);
+    if (!m) continue;
+    const tick = parseInt(m[1], 10);
+    const rest = m[2].split(/\s+/);
+    if (rest[0] !== 'N' || rest.length < 3) continue;
+    const fret = parseInt(rest[1], 10);
+    const lengthTicks = parseInt(rest[2], 10);
+
+    if (IGNORED_MODIFIER_FRETS.has(fret)) continue;
+    if (DROPPED_FRETS.has(fret)) {
+      if (fret === 7) warnings.push(`tick ${tick}: open note dropped (no lane to map it to)`);
+      continue;
+    }
+    if (!(fret in FRET_TO_LANE)) {
+      warnings.push(`tick ${tick}: unrecognized fret ${fret}, skipped`);
+      continue;
+    }
+    rawNotes.push([tick, fret, lengthTicks]);
+  }
+
+  const notes = [];
+  const consumedHoldTicks = new Set();
+
+  // 1. swipes — self-contained
+  const swipedLaneAtTick = {};
+  for (const tickStr in eventsByTick) {
+    const tick = parseInt(tickStr, 10);
+    for (const text of eventsByTick[tick]) {
+      const m = SWIPE_CODE_RE.exec(text);
+      if (m) {
+        const lane = parseInt(m[2], 10);
+        notes.push({ t: r4(tickToSeconds(tick) + offsetSeconds), lane, type: text });
+        (swipedLaneAtTick[tick] = swipedLaneAtTick[tick] || new Set()).add(lane);
+      }
+    }
+  }
+
+  // 2. sustains — plain hold, or hA>B chain
+  for (const [tick, fret, lengthTicks] of rawNotes) {
+    if (lengthTicks <= 0) continue;
+    const lane = FRET_TO_LANE[fret];
+    const startTick = tick, endTick = tick + lengthTicks;
+
+    const inside = [];
+    for (const tickStr in eventsByTick) {
+      const etick = parseInt(tickStr, 10);
+      if (startTick < etick && etick <= endTick) {
+        for (const text of eventsByTick[etick]) {
+          if (HOLD_EVENT_RE.test(text)) inside.push([etick, text]);
+        }
+      }
+    }
+    inside.sort((a, b) => a[0] - b[0]);
+
+    if (!inside.length) {
+      notes.push({
+        t: r4(tickToSeconds(startTick) + offsetSeconds),
+        type: `h${lane}>${lane}`,
+        dur: r4(tickToSeconds(endTick) - tickToSeconds(startTick))
+      });
+      continue;
+    }
+
+    const boundaries = [startTick, ...inside.map(e => e[0])];
+    if (boundaries[boundaries.length - 1] < endTick) boundaries.push(endTick);
+
+    for (let i = 0; i < boundaries.length - 1; i++) {
+      const segStart = boundaries[i], segEnd = boundaries[i + 1];
+      if (segEnd <= segStart) continue;
+      const segType = i === 0 ? `h${lane}>${lane}` : inside[i - 1][1];
+      notes.push({
+        t: r4(tickToSeconds(segStart) + offsetSeconds),
+        type: segType,
+        dur: r4(tickToSeconds(segEnd) - tickToSeconds(segStart))
+      });
+    }
+    for (const [etick] of inside) consumedHoldTicks.add(etick);
+  }
+
+  // 3. orphan hA>B events
+  for (const tickStr in eventsByTick) {
+    const tick = parseInt(tickStr, 10);
+    if (consumedHoldTicks.has(tick)) continue;
+    for (const text of eventsByTick[tick]) {
+      if (HOLD_EVENT_RE.test(text)) {
+        notes.push({ t: r4(tickToSeconds(tick) + offsetSeconds), type: text, dur: DEFAULT_NOODLE_DUR });
+        warnings.push(`tick ${tick}: noodle event ${text} has no covering sustain — used default ${DEFAULT_NOODLE_DUR}s duration, check by hand`);
+      }
+    }
+  }
+
+  // 4. plain taps
+  for (const [tick, fret, lengthTicks] of rawNotes) {
+    if (lengthTicks > 0) continue;
+    const lane = FRET_TO_LANE[fret];
+    if (swipedLaneAtTick[tick] && swipedLaneAtTick[tick].has(lane)) continue;
+    notes.push({ t: r4(tickToSeconds(tick) + offsetSeconds), lane, type: 'tap' });
+  }
+
+  notes.sort((a, b) => a.t - b.t);
+  return { notes, warnings };
+}
+
+function convert(text, sectionName) {
+  const sections = parseChartSections(text);
+  if (!('Song' in sections)) throw new Error('No [Song] section found — is this a valid .chart file?');
+  if (!(sectionName in sections)) throw new Error(`Section [${sectionName}] not found in this file.`);
+
+  const meta = parseSongMeta(sections['Song']);
+  const tempos = parseSyncTrack(sections['SyncTrack'] || []);
+  const tickToSeconds = buildTickToSeconds(tempos, meta.Resolution);
+
+  const eventsByTick = {};
+  for (const srcLines of [sections['Events'] || [], sections[sectionName]]) {
+    const ev = parseEvents(srcLines);
+    for (const tickStr in ev) {
+      const tick = parseInt(tickStr, 10);
+      (eventsByTick[tick] = eventsByTick[tick] || []).push(...ev[tick]);
+    }
+  }
+
+  const { notes, warnings } = parseNotes(sections[sectionName], eventsByTick, tickToSeconds, meta.Offset);
+
+  const chartOut = { bpm: Math.round(tempos[0][1] * 1000) / 1000, offset: 0, notes };
+  const infoOut = {
+    title: meta.Name || 'Untitled',
+    artist: meta.Artist || 'Unknown Artist',
+    difficulty: 'Standard',
+    bpm: chartOut.bpm,
+    audio: 'audio.mp3',
+    artwork: 'artwork.jpg',
+    chart: 'chart.chart'
+  };
+
+  return { chartOut, infoOut, warnings, sections };
+}
+
+// ---------------- UI wiring ----------------
+
+let fileText = null, fileBaseName = '';
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+const optionsPanel = document.getElementById('options-panel');
+const sectionSelect = document.getElementById('section-select');
+const diffSelect = document.getElementById('diff-select');
+const slugInput = document.getElementById('slug-input');
+const convertBtn = document.getElementById('convert-btn');
+const errorBox = document.getElementById('error-box');
+const resultPanel = document.getElementById('result-panel');
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.classList.add('show');
+}
+function clearError() { errorBox.classList.remove('show'); errorBox.textContent = ''; }
+
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 30) || 'song';
+}
+const DIFF_CODE = { Standard: 'ST', Gold: 'GOLD', Diamond: 'DIAMOND' };
+
+function handleFile(file) {
+  clearError();
+  resultPanel.classList.remove('show');
+  fileBaseName = file.name.replace(/\.chart$/i, '');
+  const reader = new FileReader();
+  reader.onload = () => {
+    fileText = reader.result;
+    try {
+      const sections = parseChartSections(fileText);
+      const noteSections = Object.keys(sections).filter(s => !['Song', 'SyncTrack', 'Events'].includes(s));
+      if (!noteSections.length) {
+        showError('No note sections (like ExpertSingle) found in this file.');
+        optionsPanel.classList.remove('show');
+        return;
+      }
+      sectionSelect.innerHTML = noteSections.map(s => `<option value="${s}">${s}</option>`).join('');
+      const meta = parseSongMeta(sections['Song'] || []);
+      slugInput.value = slugify(meta.Name || fileBaseName);
+      document.getElementById('dz-label').textContent = file.name;
+      document.getElementById('dz-sub').textContent = 'Loaded — pick options below, then convert';
+      optionsPanel.classList.add('show');
+    } catch (e) {
+      showError('Could not read this file: ' + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+['dragenter', 'dragover'].forEach(evt =>
+  dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(evt =>
+  dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e => {
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+convertBtn.addEventListener('click', () => {
+  clearError();
+  try {
+    const result = convert(fileText, sectionSelect.value);
+    result.infoOut.difficulty = diffSelect.value;
+
+    document.getElementById('stat-tap').textContent = result.chartOut.notes.filter(n => n.type === 'tap').length;
+    document.getElementById('stat-hold').textContent = result.chartOut.notes.filter(n => n.type.startsWith('h') && n.type.includes('>')).length;
+    document.getElementById('stat-swipe').textContent = result.chartOut.notes.filter(n => /^[lr][1-4]$/.test(n.type)).length;
+
+    const warningsBox = document.getElementById('warnings-box');
+    if (result.warnings.length) {
+      warningsBox.style.display = 'block';
+      warningsBox.innerHTML = result.warnings.map(w => `<div>⚠ ${w}</div>`).join('');
+    } else {
+      warningsBox.style.display = 'none';
+    }
+
+    const chartBlob = new Blob([JSON.stringify(result.chartOut, null, 2)], { type: 'application/json' });
+    const infoBlob = new Blob([JSON.stringify(result.infoOut, null, 2)], { type: 'application/json' });
+    document.getElementById('dl-chart').href = URL.createObjectURL(chartBlob);
+    document.getElementById('dl-info').href = URL.createObjectURL(infoBlob);
+
+    const slug = slugInput.value.trim() || slugify(fileBaseName);
+    const folderName = `${slug}_${DIFF_CODE[diffSelect.value]}`;
+    document.getElementById('folder-hint').textContent = `Hi Beatz/${folderName}/`;
+
+    resultPanel.classList.add('show');
+  } catch (e) {
+    showError(e.message);
+  }
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  fileText = null;
+  fileInput.value = '';
+  optionsPanel.classList.remove('show');
+  resultPanel.classList.remove('show');
+  document.getElementById('dz-label').textContent = 'Drop a .chart file here, or tap to choose one';
+  document.getElementById('dz-sub').textContent = 'Reads note sections, swipe/noodle events, and tempo changes directly from the file';
+});
+</script>
+</body>
+</html>

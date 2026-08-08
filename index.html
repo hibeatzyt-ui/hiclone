@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Hi Clone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ HOME ============ -->
+  <section id="screen-home" class="screen active">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-hi">HI</span><span class="brand-clone">CLONE</span>
+      </div>
+      <button class="iconbtn" data-nav="profile" aria-label="Profile">
+        <span id="profile-avatar">🎧</span>
+      </button>
+    </header>
+
+    <div class="home-hero">
+      <div class="pulse-bar" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <h1>Play the beat.<br>Own the lane.</h1>
+      <p class="sub">A 4-lane tap · swipe · noodle rhythm game, built to run entirely from your own <code>Hi Beatz</code> folder.</p>
+    </div>
+
+    <nav class="home-menu">
+      <button class="menu-tile primary" data-nav="songselect">
+        <span class="tile-label">Play</span>
+        <span class="tile-sub">Browse your library</span>
+      </button>
+      <button class="menu-tile" data-nav="manage">
+        <span class="tile-label">Add a Song</span>
+        <span class="tile-sub">Generate info.json</span>
+      </button>
+      <button class="menu-tile" data-nav="settings">
+        <span class="tile-label">Settings</span>
+        <span class="tile-sub">Speed &amp; audio sync</span>
+      </button>
+      <button class="menu-tile" data-nav="profile">
+        <span class="tile-label">Profile</span>
+        <span class="tile-sub">Local account &amp; scores</span>
+      </button>
+    </nav>
+
+    <p class="home-footnote" id="manifest-status">Loading your library…</p>
+  </section>
+
+  <!-- ============ SONG SELECT ============ -->
+  <section id="screen-songselect" class="screen">
+    <header class="topbar">
+      <button class="iconbtn" data-nav="home" aria-label="Back">←</button>
+      <div class="title-block">
+        <h2>Song Select</h2>
+      </div>
+      <span></span>
+    </header>
+
+    <div id="song-list" class="song-list">
+      <!-- populated by js -->
+    </div>
+  </section>
+
+  <!-- ============ DIFFICULTY PICK ============ -->
+  <section id="screen-difficulty" class="screen">
+    <header class="topbar">
+      <button class="iconbtn" data-nav="songselect" aria-label="Back">←</button>
+      <div class="title-block">
+        <h2 id="diff-title">Song</h2>
+        <p id="diff-artist" class="muted"></p>
+      </div>
+      <span></span>
+    </header>
+
+    <div class="diff-art-wrap">
+      <img id="diff-artwork" alt="" />
+    </div>
+
+    <div id="diff-chart-list" class="diff-list"></div>
+
+    <button id="diff-play-btn" class="cta-btn" disabled>Select a difficulty</button>
+  </section>
+
+  <!-- ============ GAMEPLAY ============ -->
+  <section id="screen-game" class="screen game-screen">
+    <div class="game-topline">
+      <div class="hud-score" id="hud-score">0</div>
+      <button class="iconbtn small" id="pause-btn" aria-label="Pause">❙❙</button>
+    </div>
+
+    <div class="disc-header">
+      <div class="wave wave-left">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="disc-wrap">
+        <div class="disc-ring" id="disc-ring">
+          <div class="disc-art"><img id="disc-art-img" alt=""></div>
+        </div>
+        <div class="disc-title" id="disc-title">Song Title</div>
+        <div class="combo-arc" id="combo-arc">
+          <svg viewBox="0 0 120 40" class="combo-smile"><path d="M14,4 Q60,42 106,4" fill="none" stroke-linecap="round"/></svg>
+          <span class="combo-x" id="hud-combo-label">x 0</span>
+        </div>
+      </div>
+
+      <div class="wave wave-right">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="game-track-wrap">
+      <canvas id="game-canvas"></canvas>
+      <div id="judgment-flash" class="judgment-flash"></div>
+      <div id="lane-tiles" class="lane-tiles">
+        <div class="lane-tile" data-lane="0"><span class="lane-tile-bar"></span></div>
+        <div class="lane-tile" data-lane="1"><span class="lane-tile-bar"></span></div>
+        <div class="lane-tile" data-lane="2"><span class="lane-tile-bar"></span></div>
+        <div class="lane-tile" data-lane="3"><span class="lane-tile-bar"></span></div>
+      </div>
+      <div id="touch-lanes" class="touch-lanes">
+        <div class="touch-lane" data-lane="0"></div>
+        <div class="touch-lane" data-lane="1"></div>
+        <div class="touch-lane" data-lane="2"></div>
+        <div class="touch-lane" data-lane="3"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PAUSE OVERLAY ============ -->
+  <div id="pause-overlay" class="overlay">
+    <div class="overlay-card">
+      <h2>Paused</h2>
+      <button class="cta-btn" id="resume-btn">Resume</button>
+      <button class="ghost-btn" id="restart-btn">Restart</button>
+      <button class="ghost-btn" id="quit-btn">Quit to menu</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="screen-results" class="screen">
+    <header class="topbar">
+      <span></span>
+      <div class="title-block"><h2>Results</h2></div>
+      <span></span>
+    </header>
+
+    <div class="results-card">
+      <p class="results-song" id="results-song"></p>
+      <div class="results-grade" id="results-grade">-</div>
+      <div class="results-score" id="results-score">0</div>
+      <div class="results-breakdown">
+        <div><span class="dot perfect"></span>Perfect <b id="res-perfect">0</b></div>
+        <div><span class="dot great"></span>Great <b id="res-great">0</b></div>
+        <div><span class="dot good"></span>Good <b id="res-good">0</b></div>
+        <div><span class="dot miss"></span>Miss <b id="res-miss">0</b></div>
+      </div>
+      <div class="results-meta">
+        <span>Max Combo: <b id="res-maxcombo">0</b></span>
+        <span>Accuracy: <b id="res-accuracy">0%</b></span>
+      </div>
+    </div>
+
+    <div class="results-actions">
+      <button class="cta-btn" id="results-retry">Retry</button>
+      <button class="ghost-btn" data-nav="songselect">Song Select</button>
+      <button class="ghost-btn" data-nav="home">Home</button>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="screen-settings" class="screen">
+    <header class="topbar">
+      <button class="iconbtn" data-nav="home" aria-label="Back">←</button>
+      <div class="title-block"><h2>Settings</h2></div>
+      <span></span>
+    </header>
+
+    <div class="settings-body">
+      <div class="setting-block">
+        <label for="speed-slider">Scroll Speed <span id="speed-value">1.0×</span></label>
+        <input type="range" id="speed-slider" min="0.5" max="3" step="0.1" value="1.0">
+      </div>
+
+      <div class="setting-block">
+        <label>Audio Sync</label>
+        <p class="muted small">Calibrate the delay between what you hear and when you tap. Tap the button in time with the beeps.</p>
+        <div class="sync-visual">
+          <div id="sync-pulse" class="sync-pulse"></div>
+        </div>
+        <button class="cta-btn" id="sync-start-btn">Start Calibration</button>
+        <p class="small" id="sync-result">Current offset: <b id="sync-offset-display">0 ms</b></p>
+      </div>
+
+      <div class="setting-block">
+        <label for="key-hint">Lane Keys</label>
+        <p class="muted small">D&nbsp;F&nbsp;J&nbsp;K for lanes 1–4. Left / Right arrow keys count as swipe input. Hold the lane key through a noodle note.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MANAGE / ADD SONG ============ -->
+  <section id="screen-manage" class="screen">
+    <header class="topbar">
+      <button class="iconbtn" data-nav="home" aria-label="Back">←</button>
+      <div class="title-block"><h2>Add a Song</h2></div>
+      <span></span>
+    </header>
+
+    <div class="settings-body">
+      <p class="muted small">Fill this in, then paste the generated JSON into <code>info.json</code> inside your song's folder. Full folder/chart instructions live in <code>Hi Beatz/README.md</code>.</p>
+
+      <div class="setting-block">
+        <label for="gen-title">Title</label>
+        <input type="text" id="gen-title" placeholder="7 rings">
+      </div>
+      <div class="setting-block">
+        <label for="gen-artist">Artist</label>
+        <input type="text" id="gen-artist" placeholder="Ariana Grande">
+      </div>
+      <div class="setting-block">
+        <label for="gen-diff">Difficulty</label>
+        <select id="gen-diff">
+          <option value="Standard">Standard (_ST)</option>
+          <option value="Gold">Gold (_GOLD)</option>
+          <option value="Diamond">Diamond (_DIAMOND)</option>
+        </select>
+      </div>
+      <div class="setting-block">
+        <label for="gen-bpm">BPM</label>
+        <input type="number" id="gen-bpm" placeholder="120">
+      </div>
+      <div class="setting-block">
+        <label for="gen-folder">Folder name (auto)</label>
+        <input type="text" id="gen-folder" readonly>
+      </div>
+
+      <button class="cta-btn" id="gen-build-btn">Generate info.json</button>
+
+      <div class="setting-block" id="gen-output-wrap" style="display:none;">
+        <label>info.json — save this into your song folder</label>
+        <textarea id="gen-output" rows="9" readonly></textarea>
+        <button class="ghost-btn" id="gen-copy-btn">Copy</button>
+        <p class="muted small">Don't forget to add <code id="gen-folder-echo"></code> to <code>songs.json</code> so the game can find it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROFILE ============ -->
+  <section id="screen-profile" class="screen">
+    <header class="topbar">
+      <button class="iconbtn" data-nav="home" aria-label="Back">←</button>
+      <div class="title-block"><h2>Profile</h2></div>
+      <span></span>
+    </header>
+
+    <div class="settings-body">
+      <p class="muted small">This is a local, on-device profile — Hi Clone runs on GitHub Pages with no server, so there's no real login. Your name and scores are saved in this browser only.</p>
+
+      <div class="setting-block">
+        <label for="profile-name">Name</label>
+        <input type="text" id="profile-name" placeholder="Player">
+      </div>
+      <div class="setting-block">
+        <label>Avatar</label>
+        <div class="avatar-grid" id="avatar-grid"></div>
+      </div>
+      <button class="cta-btn" id="profile-save-btn">Save Profile</button>
+
+      <div class="setting-block">
+        <label>High Scores</label>
+        <div id="highscore-list" class="highscore-list"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/account.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
