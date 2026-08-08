@@ -521,6 +521,6 @@ document.getElementById('profile-save-btn').addEventListener('click', () => {
 // ---------------- boot ----------------
 
 initSettingsScreen();
-loadLibrary();
+// loadLibrary();
 const initialProfile = Account.getProfile();
 document.getElementById('profile-avatar').textContent = initialProfile.avatar;
